@@ -15,6 +15,8 @@
  */
 package com.google.android.exoplayer2;
 
+import android.media.PlaybackParams;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -42,6 +44,8 @@ import java.io.IOException;
  */
 /* package */ final class ExoPlayerImplInternal implements Handler.Callback, MediaPeriod.Callback,
     TrackSelector.InvalidationListener, MediaSource.Listener {
+
+  private float speed;
 
   /**
    * Playback position information which is read on the application's thread by
@@ -188,6 +192,9 @@ import java.io.IOException;
     }
     customMessagesSent++;
     handler.obtainMessage(MSG_CUSTOM, messages).sendToTarget();
+    for (ExoPlayerMessage message : messages) {
+      maybeUpdatePlaybackSpeed(message);
+    }
   }
 
   public synchronized void blockingSendMessages(ExoPlayerMessage... messages) {
@@ -203,6 +210,9 @@ import java.io.IOException;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
+    }
+    for (ExoPlayerMessage message : messages) {
+      maybeUpdatePlaybackSpeed(message);
     }
   }
 
@@ -388,12 +398,12 @@ import java.io.IOException;
     if (periodPositionUs != C.TIME_UNSET) {
       resetRendererPosition(periodPositionUs);
     } else {
-      if (rendererMediaClockSource != null && !rendererMediaClockSource.isEnded()) {
+      //if (rendererMediaClockSource != null && !rendererMediaClockSource.isEnded()) {
         rendererPositionUs = rendererMediaClock.getPositionUs();
         standaloneMediaClock.setPositionUs(rendererPositionUs);
-      } else {
-        rendererPositionUs = standaloneMediaClock.getPositionUs();
-      }
+      //} else {
+      //  rendererPositionUs = standaloneMediaClock.getPositionUs();
+      //}
       periodPositionUs = rendererPositionUs - playingPeriodHolder.rendererPositionOffsetUs;
     }
     playbackInfo.positionUs = periodPositionUs;
@@ -1159,6 +1169,7 @@ import java.io.IOException;
                   new IllegalStateException("Multiple renderer media clocks enabled."));
             }
             rendererMediaClock = mediaClock;
+            rendererMediaClock.setPlaybackSpeed(speed);
             rendererMediaClockSource = renderer;
           }
           // Start the renderer if playing.
@@ -1289,4 +1300,35 @@ import java.io.IOException;
 
   }
 
+  public float getPlaybackSpeed() {
+    return standaloneMediaClock.getPlaybackSpeed();
+  }
+
+  public void setPlaybackSpeed(float speed) {
+    if (Build.VERSION.SDK_INT >= 23) {
+      PlaybackParams params = new PlaybackParams();
+      params.setSpeed(speed);
+      ExoPlayerMessage[] messages = new ExoPlayerMessage[renderers.length];
+      for (int i = 0; i < renderers.length; i++) {
+        messages[i] = new ExoPlayerMessage(renderers[i], C.MSG_SET_PLAYBACK_PARAMS, params);
+      }
+      try {
+        sendMessagesInternal(messages);
+      } catch (ExoPlaybackException e) {
+        e.printStackTrace();
+      }
+    } else {
+      this.speed = speed;
+      standaloneMediaClock.setPlaybackSpeed(speed);
+      if (rendererMediaClock != null) {
+        rendererMediaClock.setPlaybackSpeed(speed);
+      }
+    }
+  }
+
+  private void maybeUpdatePlaybackSpeed(ExoPlayerMessage msg) {
+    if (Build.VERSION.SDK_INT >= 23 && msg.messageType == C.MSG_SET_PLAYBACK_PARAMS) {
+      standaloneMediaClock.setPlaybackSpeed(((PlaybackParams)msg.message).allowDefaults().getSpeed());
+    }
+  }
 }
