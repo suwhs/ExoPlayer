@@ -22,22 +22,18 @@ import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.R;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
-import com.google.android.exoplayer2.decoder.DecoderCounters;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.text.TextRenderer;
-
 import java.util.List;
 
 /**
@@ -67,22 +63,25 @@ public final class SimpleExoPlayerView extends FrameLayout {
     super(context, attrs, defStyleAttr);
 
     boolean useTextureView = false;
+    int resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT;
     if (attrs != null) {
       TypedArray a = context.getTheme().obtainStyledAttributes(attrs,
           R.styleable.SimpleExoPlayerView, 0, 0);
       try {
-        useController = a.getBoolean(R.styleable.SimpleExoPlayerView_use_controller,
-            useController);
+        useController = a.getBoolean(R.styleable.SimpleExoPlayerView_use_controller, useController);
         useTextureView = a.getBoolean(R.styleable.SimpleExoPlayerView_use_texture_view,
             useTextureView);
+        resizeMode = a.getInt(R.styleable.SimpleExoPlayerView_resize_mode,
+            AspectRatioFrameLayout.RESIZE_MODE_FIT);
       } finally {
         a.recycle();
       }
     }
 
-    LayoutInflater.from(context).inflate(R.layout.exoplayer_video_view, this);
+    LayoutInflater.from(context).inflate(R.layout.exo_simple_player_view, this);
     componentListener = new ComponentListener();
     layout = (AspectRatioFrameLayout) findViewById(R.id.video_frame);
+    layout.setResizeMode(resizeMode);
     controller = (PlaybackControlView) findViewById(R.id.control);
     shutterView = findViewById(R.id.shutter);
     subtitleLayout = (SubtitleView) findViewById(R.id.subtitles);
@@ -99,6 +98,13 @@ public final class SimpleExoPlayerView extends FrameLayout {
   }
 
   /**
+   * Returns the player currently set on this view, or null if no player is set.
+   */
+  public SimpleExoPlayer getPlayer() {
+    return player;
+  }
+
+  /**
    * Set the {@link SimpleExoPlayer} to use. The {@link SimpleExoPlayer#setTextOutput} and
    * {@link SimpleExoPlayer#setVideoListener} method of the player will be called and previous
    * assignments are overridden.
@@ -106,6 +112,9 @@ public final class SimpleExoPlayerView extends FrameLayout {
    * @param player The {@link SimpleExoPlayer} to use.
    */
   public void setPlayer(SimpleExoPlayer player) {
+    if (this.player == player) {
+      return;
+    }
     if (this.player != null) {
       this.player.setTextOutput(null);
       this.player.setVideoListener(null);
@@ -113,7 +122,6 @@ public final class SimpleExoPlayerView extends FrameLayout {
       this.player.setVideoSurface(null);
     }
     this.player = player;
-
     if (player != null) {
       if (surfaceView instanceof TextureView) {
         player.setVideoTextureView((TextureView) surfaceView);
@@ -123,8 +131,12 @@ public final class SimpleExoPlayerView extends FrameLayout {
       player.setVideoListener(componentListener);
       player.addListener(componentListener);
       player.setTextOutput(componentListener);
+    } else {
+      shutterView.setVisibility(VISIBLE);
     }
-    setUseController(useController);
+    if (useController) {
+      controller.setPlayer(player);
+    }
   }
 
   /**
@@ -135,6 +147,9 @@ public final class SimpleExoPlayerView extends FrameLayout {
    * @param useController If {@code false} the playback control is never used.
    */
   public void setUseController(boolean useController) {
+    if (this.useController == useController) {
+      return;
+    }
     this.useController = useController;
     if (useController) {
       controller.setPlayer(player);
@@ -142,6 +157,17 @@ public final class SimpleExoPlayerView extends FrameLayout {
       controller.hide();
       controller.setPlayer(null);
     }
+  }
+
+  /**
+   * Sets the resize mode which can be of value {@link AspectRatioFrameLayout#RESIZE_MODE_FIT},
+   * {@link AspectRatioFrameLayout#RESIZE_MODE_FIXED_HEIGHT} or
+   * {@link AspectRatioFrameLayout#RESIZE_MODE_FIXED_WIDTH}.
+   *
+   * @param resizeMode The resize mode.
+   */
+  public void setResizeMode(int resizeMode) {
+    layout.setResizeMode(resizeMode);
   }
 
   /**
@@ -234,12 +260,12 @@ public final class SimpleExoPlayerView extends FrameLayout {
     }
 
     @Override
-    public void onRenderedFirstFrame(Surface surface) {
+    public void onRenderedFirstFrame() {
       shutterView.setVisibility(GONE);
     }
 
     @Override
-    public void onVideoDisabled(DecoderCounters counters) {
+    public void onVideoTracksDisabled() {
       shutterView.setVisibility(VISIBLE);
     }
 

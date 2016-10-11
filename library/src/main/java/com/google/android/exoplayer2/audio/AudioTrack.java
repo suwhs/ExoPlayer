@@ -213,7 +213,9 @@ public final class AudioTrack {
   private android.media.AudioTrack audioTrack;
   private int sampleRate;
   private int channelConfig;
+  @C.Encoding
   private int sourceEncoding;
+  @C.Encoding
   private int targetEncoding;
   private boolean passthrough;
   private int pcmFrameSize;
@@ -353,8 +355,8 @@ public final class AudioTrack {
    * @param specifiedBufferSize A specific size for the playback buffer in bytes, or 0 to infer a
    *     suitable buffer size automatically.
    */
-  public void configure(String mimeType, int channelCount, int sampleRate, int pcmEncoding,
-      int specifiedBufferSize) {
+  public void configure(String mimeType, int channelCount, int sampleRate,
+      @C.PcmEncoding int pcmEncoding, int specifiedBufferSize) {
     int channelConfig;
     switch (channelCount) {
       case 1:
@@ -386,7 +388,7 @@ public final class AudioTrack {
     }
 
     boolean passthrough = !MimeTypes.AUDIO_RAW.equals(mimeType);
-    int sourceEncoding;
+    @C.Encoding int sourceEncoding;
     if (passthrough) {
       sourceEncoding = getEncodingForMimeType(mimeType);
     } else if (pcmEncoding == C.ENCODING_PCM_8BIT || pcmEncoding == C.ENCODING_PCM_16BIT
@@ -475,7 +477,7 @@ public final class AudioTrack {
         if (keepSessionIdAudioTrack == null) {
           int sampleRate = 4000; // Equal to private android.media.AudioTrack.MIN_SAMPLE_RATE.
           int channelConfig = AudioFormat.CHANNEL_OUT_MONO;
-          int encoding = C.ENCODING_PCM_16BIT;
+          @C.PcmEncoding int encoding = C.ENCODING_PCM_16BIT;
           int bufferSize = 2; // Use a two byte buffer, as it is not actually used for playback.
           keepSessionIdAudioTrack = new android.media.AudioTrack(streamType, sampleRate,
               channelConfig, encoding, bufferSize, android.media.AudioTrack.MODE_STATIC, sessionId);
@@ -967,7 +969,7 @@ public final class AudioTrack {
    * @return The 16-bit PCM output. Different to the out parameter if null was passed, or if the
    *     capacity was insufficient for the output.
    */
-  private static ByteBuffer resampleTo16BitPcm(ByteBuffer buffer, int sourceEncoding,
+  private static ByteBuffer resampleTo16BitPcm(ByteBuffer buffer, @C.PcmEncoding int sourceEncoding,
       ByteBuffer out) {
     int offset = buffer.position();
     int limit = buffer.limit();
@@ -1028,6 +1030,7 @@ public final class AudioTrack {
     return resampledBuffer;
   }
 
+  @C.Encoding
   private static int getEncodingForMimeType(String mimeType) {
     switch (mimeType) {
       case MimeTypes.AUDIO_AC3:
@@ -1043,7 +1046,7 @@ public final class AudioTrack {
     }
   }
 
-  private static int getFramesPerEncodedSample(int encoding, ByteBuffer buffer) {
+  private static int getFramesPerEncodedSample(@C.Encoding int encoding, ByteBuffer buffer) {
     if (encoding == C.ENCODING_DTS || encoding == C.ENCODING_DTS_HD) {
       return DtsUtil.parseDtsAudioSampleCount(buffer);
     } else if (encoding == C.ENCODING_AC3) {

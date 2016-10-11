@@ -108,7 +108,7 @@ public class PlaybackControlView extends FrameLayout {
     formatter = new Formatter(formatBuilder, Locale.getDefault());
     componentListener = new ComponentListener();
 
-    LayoutInflater.from(context).inflate(R.layout.playback_control_view, this);
+    LayoutInflater.from(context).inflate(R.layout.exo_playback_control_view, this);
     time = (TextView) findViewById(R.id.time);
     timeCurrent = (TextView) findViewById(R.id.time_current);
     progressBar = (SeekBar) findViewById(R.id.mediacontroller_progress);
@@ -128,11 +128,21 @@ public class PlaybackControlView extends FrameLayout {
   }
 
   /**
+   * Returns the player currently being controlled by this view, or null if no player is set.
+   */
+  public ExoPlayer getPlayer() {
+    return player;
+  }
+
+  /**
    * Sets the {@link ExoPlayer} to control.
    *
    * @param player the {@code ExoPlayer} to control.
    */
   public void setPlayer(ExoPlayer player) {
+    if (this.player == player) {
+      return;
+    }
     if (this.player != null) {
       this.player.removeListener(componentListener);
     }
@@ -240,9 +250,11 @@ public class PlaybackControlView extends FrameLayout {
       return;
     }
     boolean playing = player != null && player.getPlayWhenReady();
-    playButton.setImageResource(playing ? R.drawable.ic_media_pause : R.drawable.ic_media_play);
-    playButton.setContentDescription(
-        getResources().getString(playing ? R.string.pause_description : R.string.play_description));
+    String contentDescription = getResources().getString(
+        playing ? R.string.exo_controls_pause_description : R.string.exo_controls_play_description);
+    playButton.setContentDescription(contentDescription);
+    playButton.setImageResource(
+        playing ? R.drawable.exo_controls_pause : R.drawable.exo_controls_play);
   }
 
   private void updateNavigation() {
