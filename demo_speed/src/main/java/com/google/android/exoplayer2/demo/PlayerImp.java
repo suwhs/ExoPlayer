@@ -60,9 +60,7 @@ public class PlayerImp implements IPlayer {
             boolean preferExtensionDecoders = false;
             eventLogger = new EventLogger();
             videoTrackSelectionFactory = new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER);
-            trackSelector = new DefaultTrackSelector(mainHandler, videoTrackSelectionFactory);
-            trackSelector.addListener(playerUI);
-            trackSelector.addListener(eventLogger);
+            trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
             newPlayer(preferExtensionDecoders);
             playerNeedsSource = true;
         }
@@ -90,10 +88,9 @@ public class PlayerImp implements IPlayer {
 
     private void newPlayer(boolean preferExtensionDecoders) {
         player = ExoPlayerFactory.newSimpleInstance(playerUI.getContext(), trackSelector, new DefaultLoadControl(),
-                null, preferExtensionDecoders);
+                null, SimpleExoPlayer.EXTENSION_RENDERER_MODE_ON);
         player.addListener(playerUI);
         player.addListener(eventLogger);
-        player.setId3Output(eventLogger);
         player.setVideoListener(playerUI);
 
         player.seekTo(playerPosition);

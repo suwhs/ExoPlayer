@@ -16,7 +16,7 @@ import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 /**
  * Created by ymr on 16/8/12.
  */
-public interface IPlayerUI extends MappingTrackSelector.EventListener, ExoPlayer.EventListener, SimpleExoPlayer.VideoListener {
+public interface IPlayerUI extends ExoPlayer.EventListener, SimpleExoPlayer.VideoListener {
     Activity getContext();
 
     void showToast(int errorStringId);
