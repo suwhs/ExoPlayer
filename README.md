@@ -1,5 +1,11 @@
 # ExoPlayer #
 
+# NOTE: ExoPlayer with setPlaybackSpeed method avaible on jcenter repository:
+
+```gradle
+compile 'su.whs.exoplayer:exoplayer:r2.2.0a'
+```
+
 ExoPlayer is an application level media player for Android. It provides an
 alternative to Android’s MediaPlayer API for playing audio and video both
 locally and over the Internet. ExoPlayer supports features not currently
@@ -33,7 +39,7 @@ repositories {
 Next, include the following in your module's `build.gradle` file:
 
 ```gradle
-compile 'com.google.android.exoplayer:exoplayer:rX.X.X'
+compile 'su.whs.exoplayer:exoplayer:r2.2.0a'
 ```
 
 where `rX.X.X` is the your preferred version. For the latest version, see the
